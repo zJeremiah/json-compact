@@ -28,7 +28,7 @@ Reads JSON from **stdin** by default and writes the compacted output to **stdout
 |------|---------|-------------|
 | `-f <file>` | _(stdin)_ | Read JSON from a file instead of stdin |
 | `-w <int>` | `120` | Max line width before an object is expanded to multiple lines |
-| `-indent <int>` | `1` | Number of spaces per indent level |
+| `-i <int>` | `1`   | Number of spaces per indent level |
 
 ### Examples
 

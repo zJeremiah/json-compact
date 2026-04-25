@@ -161,10 +161,10 @@ func computeObjectValueAlignment(n *Node) *alignInfo {
 }
 
 type formatter struct {
-	buf        bytes.Buffer
-	indent     int
-	indentStr  string
-	maxWidth   int
+	buf       bytes.Buffer
+	indent    int
+	indentStr string
+	maxWidth  int
 }
 
 func newFormatter(indentSize, maxWidth int) *formatter {
@@ -374,7 +374,7 @@ func padValue(n *Node, valStr string, targetWidth int) string {
 func run() error {
 	filePath := flag.String("f", "", "read JSON from file instead of stdin")
 	maxWidth := flag.Int("w", 120, "max line width before expanding objects")
-	indentSize := flag.Int("indent", 1, "number of spaces per indent level")
+	indentSize := flag.Int("i", 1, "number of spaces per indent level")
 	flag.Parse()
 
 	var input []byte
