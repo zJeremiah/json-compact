@@ -84,7 +84,7 @@ Given this input:
 
 `json-compact` produces:
 
-```
+```json
 {
  "animations": {
   "40": [
@@ -118,7 +118,7 @@ Input:
 
 Output:
 
-```
+```json
 {
  "height": 16,
  "tiles" : {
