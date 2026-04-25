@@ -1,4 +1,4 @@
-version := `git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD 2>/dev/null || echo "dev"`
+version := `git describe --tags --always 2>/dev/null || echo "dev"`
 ldflags  := "-s -w -X main.version=" + version
 
 default: build
