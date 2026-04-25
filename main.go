@@ -371,11 +371,28 @@ func padValue(n *Node, valStr string, targetWidth int) string {
 	}
 }
 
+var version = "dev"
+
+func printVersion() {
+	fmt.Println("json-compact " + version)
+}
+
 func run() error {
+	if len(os.Args) > 1 && os.Args[1] == "version" {
+		printVersion()
+		return nil
+	}
+
+	showVersion := flag.Bool("version", false, "print version and exit")
 	filePath := flag.String("f", "", "read JSON from file instead of stdin")
 	maxWidth := flag.Int("w", 120, "max line width before expanding objects")
 	indentSize := flag.Int("i", 1, "number of spaces per indent level")
 	flag.Parse()
+
+	if *showVersion {
+		printVersion()
+		return nil
+	}
 
 	var input []byte
 	var err error
