@@ -86,9 +86,9 @@ type alignInfo struct {
 	valueWidths map[string]int // max width of each value per key
 }
 
-// alignedInlineWidth computes how wide a single-line aligned rendering of
+// alignedInline computes how wide a single-line aligned rendering of
 // this object would be, given the alignment info.
-func alignedInlineWidth(n *Node, align *alignInfo) int {
+func alignedInline(n *Node, align *alignInfo) int {
 	if n.Kind != NodeObject || len(n.Entries) == 0 {
 		return flatWidth(n)
 	}
@@ -180,12 +180,33 @@ func (f *formatter) writeIndent() {
 	}
 }
 
-func (f *formatter) currentIndentWidth() int {
+func (f *formatter) currentIndent() int {
 	return f.indent * len(f.indentStr)
 }
 
+func isPrimitive(n *Node) bool {
+	switch n.Kind {
+	case NodeString, NodeNumber, NodeBool, NodeNull:
+		return true
+	default:
+		return false
+	}
+}
+
+func (f *formatter) wrapArray(n *Node) bool {
+	if len(n.Items) == 0 {
+		return false
+	}
+	for i := range n.Items {
+		if !isPrimitive(&n.Items[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func (f *formatter) fitsOnLine(n *Node) bool {
-	return f.currentIndentWidth()+flatWidth(n) <= f.maxWidth
+	return f.currentIndent()+flatWidth(n) <= f.maxWidth
 }
 
 func (f *formatter) formatNode(n *Node) {
@@ -202,6 +223,10 @@ func (f *formatter) formatNode(n *Node) {
 			f.formatArrayInline(n, nil)
 			return
 		}
+		if f.wrapArray(n) {
+			f.formatArray(n)
+			return
+		}
 
 		align := computeAlignment(n.Items)
 
@@ -210,7 +235,7 @@ func (f *formatter) formatNode(n *Node) {
 		for i := range n.Items {
 			f.writeIndent()
 			if align != nil && n.Items[i].Kind == NodeObject &&
-				f.currentIndentWidth()+alignedInlineWidth(&n.Items[i], align) <= f.maxWidth {
+				f.currentIndent()+alignedInline(&n.Items[i], align) <= f.maxWidth {
 				f.formatObjectInlineAligned(&n.Items[i], align)
 			} else {
 				f.formatNode(&n.Items[i])
@@ -256,8 +281,8 @@ func (f *formatter) formatNode(n *Node) {
 			}
 
 			if valAlign != nil && e.Value.Kind == NodeObject {
-				valInlineW := alignedInlineWidth(&e.Value, valAlign)
-				lineW := f.currentIndentWidth() + maxKeyW + 2 + valInlineW
+				valInlineW := alignedInline(&e.Value, valAlign)
+				lineW := f.currentIndent() + maxKeyW + 2 + valInlineW
 
 				if lineW <= f.maxWidth {
 					f.buf.WriteString(keyQuoted)
@@ -283,6 +308,46 @@ func (f *formatter) formatNode(n *Node) {
 		f.writeIndent()
 		f.buf.WriteString("}")
 	}
+}
+
+// formatArray writes primitive arrays using as many values
+// per line as fit in maxWidth.
+func (f *formatter) formatArray(n *Node) {
+	f.buf.WriteString("[\n")
+	f.indent++
+
+	linePrefixWidth := f.currentIndent()
+	lineWidth := linePrefixWidth
+	started := false
+
+	for i := range n.Items {
+		itemWidth := flatWidth(&n.Items[i])
+
+		if !started {
+			f.writeIndent()
+			f.formatNode(&n.Items[i])
+			lineWidth = linePrefixWidth + itemWidth
+			started = true
+			continue
+		}
+
+		if lineWidth+2+itemWidth <= f.maxWidth {
+			f.buf.WriteString(", ")
+			f.formatNode(&n.Items[i])
+			lineWidth += 2 + itemWidth
+		} else {
+			// Comma belongs to the previous item.
+			f.buf.WriteString(",\n")
+			f.writeIndent()
+			f.formatNode(&n.Items[i])
+			lineWidth = linePrefixWidth + itemWidth
+		}
+	}
+
+	f.buf.WriteString("\n")
+	f.indent--
+	f.writeIndent()
+	f.buf.WriteString("]")
 }
 
 func (f *formatter) formatArrayInline(n *Node, align *alignInfo) {
